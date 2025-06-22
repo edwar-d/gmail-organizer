@@ -471,7 +471,7 @@ Generate only the reply text, without any additional commentary or explanations.
         
         # Call Gemini API
         import google.generativeai as genai
-        genai.configure(api_key="AIzaSyBCW5yfwtmz7qjsxLgZkz6v-nKtcJI2UfA")
+        genai.configure(api_key="key here")
         model = genai.GenerativeModel('gemini-2.0-flash')
         
         response = model.generate_content(prompt)
