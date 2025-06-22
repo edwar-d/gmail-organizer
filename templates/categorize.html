@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream - Email Categories</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/categorize.css') }}">
+</head>
+<body>
+    <div class="header">
+        <h1><i class="fas fa-inbox"></i> Email Categories</h1>
+        <div class="user-info">
+            <span class="user-email">{{ user_email }}</span>
+            <a href="/inbox" class="btn">
+                <i class="fas fa-arrow-left"></i> Back
+            </a>
+            <a href="/logout" class="btn btn-primary">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h2>Your Streamlined Inbox</h2>
+            <p>Emails automatically sorted into categories for better organization</p>
+            
+            <!-- Saved Categories Info -->
+            {% if is_saved %}
+            <div class="saved-info">
+                <i class="fas fa-save"></i>
+                <span>Showing saved categories from {{ saved_at if saved_at else 'recently' }}</span>
+                <a href="/categorize?recategorize=true" class="btn btn-secondary">
+                    <i class="fas fa-sync"></i> Recategorize
+                </a>
+            </div>
+            {% else %}
+            <!-- Recategorize button for non-saved data -->
+            <div class="action-buttons">
+                <a href="/categorize?recategorize=true" class="btn btn-secondary">
+                    <i class="fas fa-sync"></i> Recategorize
+                </a>
+            </div>
+            {% endif %}
+            
+            <div class="search-container">
+                <form id="categoryForm" action="/categorize" method="GET" class="search-form">
+                    <div class="search-input-group">
+                        <i class="fas fa-magic search-icon"></i>
+                        <input 
+                            type="text" 
+                            id="categoryQuery" 
+                            name="query" 
+                            placeholder="Describe how you'd like your emails categorized (e.g., 'by priority', 'by project', 'urgent vs non-urgent')"
+                            class="search-input"
+                            value="{{ query if query else '' }}"
+                        >
+                        <button type="submit" class="search-button">
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </form>
+                {% if query %}
+                <div class="active-query">
+                    <i class="fas fa-filter"></i>
+                    <span>Categorized by: "{{ query }}"</span>
+                    <a href="/categorize" class="clear-query">
+                        <i class="fas fa-times"></i>
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button id="saveDataBtn" class="btn btn-primary" title="Save categories and folders locally">
+                    <i class="fas fa-save"></i> Save Data
+                </button>
+                <button id="loadSavedBtn" class="btn btn-outline" title="Load previously saved data">
+                    <i class="fas fa-folder-open"></i> Load Saved
+                </button>
+            </div>
+        </div>
+
+        <div class="categories-grid">
+            {% for category_name, emails in categories.items() %}
+            <div class="category-card">
+                <div class="category-header">
+                    <div class="category-title">
+                        <div class="category-icon">
+                            <i class="fas fa-folder"></i>
+                        </div>
+                        <div class="category-name">{{ category_name }}</div>
+                    </div>
+                    <div class="category-count">{{ emails|length }}</div>
+                </div>
+
+                <div class="email-list">
+                    {% if emails %}
+                        {% for email in emails %}
+                        <div class="email-item" data-email-subject="{{ email.subject }}" 
+                             data-email-sender="{{ email.sender }}" 
+                             data-email-date="{{ email.date if email.date else 'No date available' }}"
+                             data-email-content="{{ email.content if email.content else email.snippet }}"
+                             data-email-snippet="{{ email.snippet }}">
+                            <div class="email-subject">{{ email.subject }}</div>
+                            <div class="email-sender">{{ email.sender }}</div>
+                            <div class="email-snippet">{{ email.snippet[:100] }}{% if email.snippet|length > 100 %}...{% endif %}</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-category">
+                            <i class="fas fa-inbox"></i>
+                            <p>No emails in this category</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Email Modal -->
+    <div id="emailModal" class="email-modal">
+        <div class="email-modal-content">
+            <div class="email-modal-header">
+                <button class="email-modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h2 class="email-modal-subject" id="modalSubject"></h2>
+                <div class="email-modal-meta">
+                    <div class="email-meta-row">
+                        <span class="email-meta-label">From:</span>
+                        <span class="email-meta-value">
+                            <span class="email-sender-name" id="modalSender"></span>
+                        </span>
+                    </div>
+                    <div class="email-meta-row">
+                        <span class="email-meta-label">Date:</span>
+                        <span class="email-meta-value email-date" id="modalDate"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="email-modal-body" id="modalContent">
+                <!-- Email content will be inserted here -->
+            </div>
+            <div class="email-modal-footer">
+                <button class="email-modal-btn email-modal-btn-secondary" id="closeModalBtn">
+                    <i class="fas fa-times"></i> Close
+                </button>
+                <button class="email-modal-btn email-modal-btn-primary" onclick="window.location.href='/inbox'">
+                    <i class="fas fa-inbox"></i> View in Inbox
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification System -->
+    <div id="notificationContainer" class="notification-container">
+        <!-- Notifications will be dynamically added here -->
+    </div>
+
+    <button class="back-to-inbox" onclick="window.location.href='/inbox'" title="Back to Inbox">
+        <i class="fas fa-inbox"></i>
+    </button>
+
+    <!-- Template data -->
+    <div id="template-data" 
+         data-categories='{{ categories|tojson|safe if categories else "{}" }}'
+         data-is-saved='{{ "true" if is_saved else "false" }}'
+         data-saved-at='{{ saved_at|tojson|safe if saved_at else "null" }}'
+         data-query='{{ query|tojson|safe if query else "" }}'
+         style="display: none;">
+    </div>
+
+    <script>
+        // Load template data
+        const templateElement = document.getElementById('template-data');
+        let categoriesData = templateElement ? JSON.parse(templateElement.dataset.categories || '{}') : {};
+        let isSavedData = templateElement ? (templateElement.dataset.isSaved === 'true') : false;
+        let savedAt = templateElement ? JSON.parse(templateElement.dataset.savedAt || 'null') : null;
+        let currentQuery = templateElement ? JSON.parse(templateElement.dataset.query || '""') : "";
+        
+        // Store all emails data for chat context
+        let allEmails = [];
+        if (categoriesData && typeof categoriesData === 'object') {
+            for (const [categoryName, emails] of Object.entries(categoriesData)) {
+                if (Array.isArray(emails)) {
+                    for (const email of emails) {
+                        allEmails.push({
+                            category: categoryName,
+                            subject: email.subject || '',
+                            sender: email.sender || '',
+                            date: email.date || 'No date',
+                            snippet: email.snippet || '',
+                            content: email.content || email.snippet || ''
+                        });
+                    }
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Modal elements
+            const emailModal = document.getElementById('emailModal');
+            const modalSubject = document.getElementById('modalSubject');
+            const modalSender = document.getElementById('modalSender');
+            const modalDate = document.getElementById('modalDate');
+            const modalContent = document.getElementById('modalContent');
+            const closeModal = document.getElementById('closeModal');
+            const closeModalBtn = document.getElementById('closeModalBtn');
+
+            // Function to strip HTML and return clean text
+            function stripHtml(html) {
+                if (!html) return '';
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                let text = tempDiv.textContent || tempDiv.innerText || '';
+                text = text.replace(/\s+/g, ' ').trim();
+                text = text.replace(/\[.*?\]/g, '');
+                text = text.replace(/\(.*?\)/g, '');
+                text = text.replace(/http[s]?:\/\/[^\s]+/g, '[Link]');
+                return text.trim();
+            }
+
+            // Function to escape HTML
+            function escapeHtml(text) {
+                if (!text) return '';
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            // Function to open modal
+            function openEmailModal(emailData) {
+                if (modalSubject) modalSubject.textContent = stripHtml(emailData.subject || '');
+                if (modalSender) modalSender.textContent = stripHtml(emailData.sender || '');
+                if (modalDate) modalDate.textContent = stripHtml(emailData.date || 'No date');
+                
+                const content = stripHtml(emailData.content || emailData.snippet || '');
+                if (modalContent) {
+                    modalContent.textContent = content;
+                    modalContent.style.whiteSpace = 'pre-wrap';
+                    modalContent.style.fontFamily = 'monospace';
+                    modalContent.style.fontSize = '14px';
+                    modalContent.style.lineHeight = '1.5';
+                }
+                
+                if (emailModal) {
+                    emailModal.classList.add('show');
+                    document.body.style.overflow = 'hidden';
+                }
+            }
+
+            // Function to close modal
+            function closeEmailModal() {
+                if (emailModal) {
+                    emailModal.classList.remove('show');
+                    document.body.style.overflow = '';
+                }
+            }
+
+            // Email item click handlers
+            const emailItems = document.querySelectorAll('.email-item');
+            emailItems.forEach(item => {
+                item.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    this.style.transform = 'scale(0.98)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 100);
+
+                    const emailData = {
+                        subject: this.getAttribute('data-email-subject') || '',
+                        sender: this.getAttribute('data-email-sender') || '',
+                        date: this.getAttribute('data-email-date') || 'No date',
+                        content: this.getAttribute('data-email-content') || '',
+                        snippet: this.getAttribute('data-email-snippet') || ''
+                    };
+
+                    openEmailModal(emailData);
+                });
+            });
+
+            // Close modal event handlers
+            if (closeModal) {
+                closeModal.addEventListener('click', closeEmailModal);
+            }
+            if (closeModalBtn) {
+                closeModalBtn.addEventListener('click', closeEmailModal);
+            }
+
+            if (emailModal) {
+                emailModal.addEventListener('click', function(e) {
+                    if (e.target === emailModal) {
+                        closeEmailModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && emailModal && emailModal.classList.contains('show')) {
+                    closeEmailModal();
+                } else if (e.key === 'Escape') {
+                    window.location.href = '/inbox';
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k' && (!emailModal || !emailModal.classList.contains('show'))) {
+                    e.preventDefault();
+                    const categoryQuery = document.getElementById('categoryQuery');
+                    if (categoryQuery) categoryQuery.focus();
+                }
+            });
+
+            // Form submission
+            const categoryForm = document.getElementById('categoryForm');
+            const searchInput = document.getElementById('categoryQuery');
+            
+            if (categoryForm) {
+                categoryForm.addEventListener('submit', function(e) {
+                    const searchButton = this.querySelector('.search-button');
+                    if (searchButton) {
+                        const originalContent = searchButton.innerHTML;
+                        searchButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                        searchButton.disabled = true;
+                        
+                        setTimeout(() => {
+                            searchButton.innerHTML = originalContent;
+                            searchButton.disabled = false;
+                        }, 500);
+                    }
+                });
+            }
+
+            if (searchInput) {
+                searchInput.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (categoryForm) categoryForm.submit();
+                    }
+                });
+
+                if (!searchInput.value && (!emailModal || !emailModal.classList.contains('show'))) {
+                    searchInput.focus();
+                }
+            }
+
+            // Show notification if this is saved data
+            if (isSavedData) {
+                const savedTime = savedAt || 'recently';
+                showNotification(`Loaded saved categories from ${savedTime}`, 'info');
+            }
+
+            // Save Data Button
+            const saveDataBtn = document.getElementById('saveDataBtn');
+            if (saveDataBtn) {
+                saveDataBtn.addEventListener('click', function() {
+                    console.log('Save button clicked');
+                    
+                    // Create simplified data structure for saving
+                    const simplifiedCategories = {};
+                    for (const [categoryName, emails] of Object.entries(categoriesData)) {
+                        simplifiedCategories[categoryName] = emails.map(email => ({
+                            subject: email.subject || '',
+                            sender: email.sender || '',
+                            date: email.date || '',
+                            snippet: email.snippet || '',
+                            content: (email.content || email.snippet || '').substring(0, 200)
+                        }));
+                    }
+                    
+                    const query = (document.getElementById('categoryQuery') && document.getElementById('categoryQuery').value) || '';
+                    
+                    console.log('Saving simplified categories:', simplifiedCategories);
+                    console.log('Saving query:', query);
+                        
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                    this.disabled = true;
+                    
+                    Promise.all([
+                        fetch('/api/save-categories', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                categories: simplifiedCategories,
+                                query: query
+                            })
+                        }),
+                        fetch('/api/save-folders', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                folders: simplifiedCategories
+                            })
+                        })
+                    ])
+                    .then(responses => {
+                        console.log('Save responses:', responses);
+                        return Promise.all(responses.map(r => r.json()));
+                    })
+                    .then(results => {
+                        console.log('Save results:', results);
+                        const [categoriesResult, foldersResult] = results;
+                        
+                        if (categoriesResult.success && foldersResult.success) {
+                            const now = new Date();
+                            const timestamp = now.toLocaleString();
+                            showNotification(`Data saved successfully at ${timestamp}`, 'success');
+                            this.innerHTML = '<i class="fas fa-check"></i> Saved';
+                            this.classList.add('btn-success');
+                            setTimeout(() => {
+                                this.innerHTML = originalText;
+                                this.disabled = false;
+                                this.classList.remove('btn-success');
+                            }, 2000);
+                        } else {
+                            const errorMsg = categoriesResult.success ? 
+                                'Failed to save folders: ' + (foldersResult.message || 'Unknown error') :
+                                'Failed to save categories: ' + (categoriesResult.message || 'Unknown error');
+                            showNotification(errorMsg, 'error');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Save error:', error);
+                        showNotification('Error saving data: ' + error.message, 'error');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    });
+                });
+            }
+            
+            // Load Saved Button
+            const loadSavedBtn = document.getElementById('loadSavedBtn');
+            if (loadSavedBtn) {
+                loadSavedBtn.addEventListener('click', function() {
+                    const originalText = this.innerHTML;
+                    this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+                    this.disabled = true;
+                    
+                    fetch('/api/load-saved-categories')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Loaded data:', data);
+                        
+                        if (data.success && data.data && data.data.categories) {
+                            // Update the variables with saved data
+                            categoriesData = data.data.categories;
+                            isSavedData = true;
+                            savedAt = data.data.saved_at || new Date().toLocaleString();
+                            currentQuery = data.data.query || '';
+                            
+                            // Update the search input with saved query
+                            const searchInput = document.getElementById('categoryQuery');
+                            if (searchInput) {
+                                searchInput.value = currentQuery;
+                            }
+                            
+                            // Rebuild the categories grid with saved data
+                            renderCategories(categoriesData);
+                            
+                            // Update the allEmails array for chat functionality
+                            updateAllEmails(categoriesData);
+                            
+                            // Show success notification
+                            showNotification(`Loaded saved categories from ${savedAt}`, 'success');
+                            
+                            // Update the saved info display
+                            updateSavedInfoDisplay(true, savedAt);
+                            
+                            // Update the active query display
+                            updateActiveQueryDisplay(currentQuery);
+                            
+                            this.innerHTML = '<i class="fas fa-check"></i> Loaded';
+                            this.classList.add('btn-success');
+                            setTimeout(() => {
+                                this.innerHTML = originalText;
+                                this.disabled = false;
+                                this.classList.remove('btn-success');
+                            }, 2000);
+                        } else {
+                            showNotification('No saved data found', 'warning');
+                            this.innerHTML = originalText;
+                            this.disabled = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Load error:', error);
+                        showNotification('Error loading saved data: ' + error.message, 'error');
+                        this.innerHTML = originalText;
+                        this.disabled = false;
+                    });
+                });
+            }
+
+            // Function to render categories on the page
+            function renderCategories(categories) {
+                const categoriesGrid = document.querySelector('.categories-grid');
+                if (!categoriesGrid) return;
+                
+                console.log('Rendering categories:', categories);
+                
+                // Clear existing content
+                categoriesGrid.innerHTML = '';
+                
+                // Render each category
+                for (const [categoryName, emails] of Object.entries(categories)) {
+                    const categoryCard = document.createElement('div');
+                    categoryCard.className = 'category-card';
+                    
+                    // Create category header
+                    const categoryHeader = document.createElement('div');
+                    categoryHeader.className = 'category-header';
+                    categoryHeader.innerHTML = `
+                        <div class="category-title">
+                            <div class="category-icon">
+                                <i class="fas fa-folder"></i>
+                            </div>
+                            <div class="category-name">${escapeHtml(categoryName)}</div>
+                        </div>
+                        <div class="category-count">${emails.length}</div>
+                    `;
+                    
+                    // Create email list
+                    const emailList = document.createElement('div');
+                    emailList.className = 'email-list';
+                    
+                    if (emails.length > 0) {
+                        emails.forEach(email => {
+                            const emailItem = document.createElement('div');
+                            emailItem.className = 'email-item';
+                            
+                            // Strip HTML and get clean text content
+                            const cleanSubject = stripHtml(email.subject || '');
+                            const cleanSender = stripHtml(email.sender || '');
+                            const cleanDate = stripHtml(email.date || 'No date available');
+                            const cleanContent = stripHtml(email.content || email.snippet || '');
+                            const cleanSnippet = stripHtml(email.snippet || '');
+                            
+                            // Set data attributes safely
+                            emailItem.setAttribute('data-email-subject', cleanSubject);
+                            emailItem.setAttribute('data-email-sender', cleanSender);
+                            emailItem.setAttribute('data-email-date', cleanDate);
+                            emailItem.setAttribute('data-email-content', cleanContent);
+                            emailItem.setAttribute('data-email-snippet', cleanSnippet);
+                            
+                            // Create email content using textContent for safety
+                            const emailSubject = document.createElement('div');
+                            emailSubject.className = 'email-subject';
+                            emailSubject.textContent = cleanSubject;
+                            
+                            const emailSender = document.createElement('div');
+                            emailSender.className = 'email-sender';
+                            emailSender.textContent = cleanSender;
+                            
+                            const emailSnippet = document.createElement('div');
+                            emailSnippet.className = 'email-snippet';
+                            const snippetText = cleanSnippet;
+                            emailSnippet.textContent = snippetText.length > 100 ? snippetText.substring(0, 100) + '...' : snippetText;
+                            
+                            emailItem.appendChild(emailSubject);
+                            emailItem.appendChild(emailSender);
+                            emailItem.appendChild(emailSnippet);
+                            
+                            emailList.appendChild(emailItem);
+                        });
+                    } else {
+                        const emptyCategory = document.createElement('div');
+                        emptyCategory.className = 'empty-category';
+                        emptyCategory.innerHTML = `
+                            <i class="fas fa-inbox"></i>
+                            <p>No emails in this category</p>
+                        `;
+                        emailList.appendChild(emptyCategory);
+                    }
+                    
+                    categoryCard.appendChild(categoryHeader);
+                    categoryCard.appendChild(emailList);
+                    categoriesGrid.appendChild(categoryCard);
+                }
+                
+                // Reattach event listeners to new email items
+                attachEmailItemListeners();
+            }
+            
+            // Function to update allEmails array
+            function updateAllEmails(categories) {
+                allEmails.length = 0; // Clear existing emails
+                if (categories && typeof categories === 'object') {
+                    for (const [categoryName, emails] of Object.entries(categories)) {
+                        if (Array.isArray(emails)) {
+                            for (const email of emails) {
+                                allEmails.push({
+                                    category: categoryName,
+                                    subject: stripHtml(email.subject || ''),
+                                    sender: stripHtml(email.sender || ''),
+                                    date: stripHtml(email.date || 'No date'),
+                                    snippet: stripHtml(email.snippet || ''),
+                                    content: stripHtml(email.content || email.snippet || '')
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Function to update saved info display
+            function updateSavedInfoDisplay(isSaved, savedTime) {
+                const pageHeader = document.querySelector('.page-header');
+                if (!pageHeader) return;
+                
+                // Remove existing saved info
+                const existingSavedInfo = pageHeader.querySelector('.saved-info');
+                if (existingSavedInfo) {
+                    existingSavedInfo.remove();
+                }
+                
+                if (isSaved) {
+                    const savedInfo = document.createElement('div');
+                    savedInfo.className = 'saved-info';
+                    savedInfo.innerHTML = `
+                        <i class="fas fa-save"></i>
+                        <span>Showing saved categories from ${escapeHtml(savedTime)}</span>
+                        <a href="/categorize?recategorize=true" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Recategorize
+                        </a>
+                    `;
+                    
+                    // Insert after the description paragraph
+                    const description = pageHeader.querySelector('p');
+                    if (description) {
+                        description.insertAdjacentElement('afterend', savedInfo);
+                    }
+                }
+            }
+            
+            // Function to update active query display
+            function updateActiveQueryDisplay(query) {
+                const searchContainer = document.querySelector('.search-container');
+                if (!searchContainer) return;
+                
+                // Remove existing active query
+                const existingActiveQuery = searchContainer.querySelector('.active-query');
+                if (existingActiveQuery) {
+                    existingActiveQuery.remove();
+                }
+                
+                if (query) {
+                    const activeQuery = document.createElement('div');
+                    activeQuery.className = 'active-query';
+                    activeQuery.innerHTML = `
+                        <i class="fas fa-filter"></i>
+                        <span>Categorized by: "${escapeHtml(query)}"</span>
+                        <a href="/categorize" class="clear-query">
+                            <i class="fas fa-times"></i>
+                        </a>
+                    `;
+                    
+                    searchContainer.appendChild(activeQuery);
+                }
+            }
+            
+            // Function to attach event listeners to email items
+            function attachEmailItemListeners() {
+                const emailItems = document.querySelectorAll('.email-item');
+                emailItems.forEach(item => {
+                    item.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        this.style.transform = 'scale(0.98)';
+                        setTimeout(() => {
+                            this.style.transform = '';
+                        }, 100);
+
+                        const emailData = {
+                            subject: this.getAttribute('data-email-subject') || '',
+                            sender: this.getAttribute('data-email-sender') || '',
+                            date: this.getAttribute('data-email-date') || 'No date',
+                            content: this.getAttribute('data-email-content') || '',
+                            snippet: this.getAttribute('data-email-snippet') || ''
+                        };
+
+                        openEmailModal(emailData);
+                    });
+                });
+            }
+
+            // Notification system
+            function showNotification(message, type = 'info') {
+                const notificationContainer = document.getElementById('notificationContainer');
+                if (!notificationContainer) return;
+                
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                
+                const icon = type === 'success' ? 'check-circle' : 
+                           type === 'error' ? 'exclamation-circle' : 
+                           type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+                
+                notification.innerHTML = `
+                    <i class="fas fa-${icon}"></i>
+                    <span>${escapeHtml(message)}</span>
+                    <button class="notification-close" onclick="this.parentElement.remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                notificationContainer.appendChild(notification);
+                
+                // Auto remove after 5 seconds
+                setTimeout(() => {
+                    if (notification.parentElement) {
+                        notification.remove();
+                    }
+                }, 5000);
+            }
+            
+            // Make showNotification available globally
+            window.showNotification = showNotification;
+        });
+    </script>
+</body>
+</html>

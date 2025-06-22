@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with Your Mail - Stream</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #1e293b;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #1e293b;
+            font-size: 24px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header h1 i {
+            color: #3b82f6;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .user-email {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-btn {
+            background: white;
+            color: #64748b;
+            text-decoration: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-btn:hover {
+            background: #f1f5f9;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .nav-btn.primary {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border-color: transparent;
+        }
+
+        .nav-btn.primary:hover {
+            background: linear-gradient(135deg, #2563eb, #7c3aed);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 32px;
+            min-height: calc(100vh - 120px);
+        }
+
+        .chat-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .chat-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 24px;
+            overflow-y: auto;
+            max-height: 500px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .chat-message.assistant .message-avatar {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .chat-message.user .message-avatar {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 16px 20px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+            word-wrap: break-word;
+        }
+
+        .chat-message.assistant .message-content {
+            background: #f8fafc;
+            color: #1f2937;
+            border-bottom-left-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .chat-message.user .message-content {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin: 4px 0;
+        }
+
+        .relevant-emails {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .relevant-emails h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .chat-email-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chat-email-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+            transform: translateX(2px);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+        }
+
+        .chat-email-subject {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .chat-email-meta {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .chat-input-container {
+            padding: 24px;
+            border-top: 1px solid #e5e7eb;
+            background: #f8fafc;
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 12px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            resize: none;
+            min-height: 44px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .chat-send {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 44px;
+            height: 44px;
+        }
+
+        .chat-send:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .chat-send:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .typing-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 16px 20px;
+            color: #6b7280;
+            font-style: italic;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 6px;
+            height: 6px;
+            background: #6b7280;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        .email-preview-section {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid rgba(226, 232, 240, 0.5);
+        }
+
+        .preview-header {
+            background: linear-gradient(135deg, #f8fafc, #f1f5f9);
+            padding: 20px 24px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .preview-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .preview-header p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .email-preview-content {
+            padding: 24px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .empty-preview {
+            text-align: center;
+            color: #94a3b8;
+            padding: 40px 20px;
+        }
+
+        .empty-preview i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .suggestions {
+            margin-top: 20px;
+        }
+
+        .suggestions h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 12px;
+        }
+
+        .suggestion-item {
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            color: #1e40af;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: rgba(59, 130, 246, 0.3);
+            transform: translateX(2px);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-8px);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px 16px;
+            }
+
+            .header {
+                padding: 12px 16px;
+                flex-direction: column;
+                gap: 12px;
+            }
+
+            .chat-messages {
+                max-height: 400px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+        }
+
+        /* Custom scrollbar */
+        .chat-messages::-webkit-scrollbar,
+        .email-preview-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track,
+        .email-preview-content::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb,
+        .email-preview-content::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover,
+        .email-preview-content::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>
+            <i class="fas fa-comments"></i>
+            Chat with Your Mail
+        </h1>
+        <div class="user-info">
+            <span class="user-email">{{ user_email }}</span>
+            <a href="/inbox" class="nav-btn">
+                <i class="fas fa-inbox"></i>
+                Back to Inbox
+            </a>
+            <a href="/categorize" class="nav-btn">
+                <i class="fas fa-magic"></i>
+                Categorize
+            </a>
+            <a href="/logout" class="nav-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                Logout
+            </a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="chat-section">
+            <div class="chat-header">
+                <h2>AI Email Assistant</h2>
+                <p>Ask me anything about your emails - I'll help you find and understand them</p>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                <div class="chat-message assistant">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <p>Hello! I'm your AI email assistant. I can help you find, understand, and manage your emails using natural language.</p>
+                        
+                        <div class="suggestions">
+                            <h4>Try asking me:</h4>
+                            <div class="suggestion-item" onclick="sendSuggestion('What emails are urgent?')">
+                                "What emails are urgent?"
+                            </div>
+                            <div class="suggestion-item" onclick="sendSuggestion('Show me emails from this week')">
+                                "Show me emails from this week"
+                            </div>
+                            <div class="suggestion-item" onclick="sendSuggestion('Find emails about meetings')">
+                                "Find emails about meetings"
+                            </div>
+                            <div class="suggestion-item" onclick="sendSuggestion('Summarize my inbox')">
+                                "Summarize my inbox"
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span>AI is thinking...</span>
+            </div>
+
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        id="chatInput" 
+                        class="chat-input" 
+                        placeholder="Ask me about your emails..."
+                        rows="1"
+                        onkeydown="handleKeyPress(event)"
+                        oninput="autoResize(this)"
+                    ></textarea>
+                    <button class="chat-send" id="sendButton" onclick="sendMessage()">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="email-preview-section">
+            <div class="preview-header">
+                <h3>Email Preview</h3>
+                <p>Selected emails will appear here</p>
+            </div>
+            <div class="email-preview-content" id="emailPreview">
+                <div class="empty-preview">
+                    <i class="fas fa-envelope-open"></i>
+                    <p>Ask me about your emails and I'll show relevant ones here</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-resize textarea
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        // Handle keyboard shortcuts
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Send suggestion
+        function sendSuggestion(text) {
+            document.getElementById('chatInput').value = text;
+            sendMessage();
+        }
+
+        // Send message
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            autoResize(input);
+            
+            // Show typing indicator
+            showTyping();
+            
+            try {
+                const response = await fetch('/api/chat-with-mail', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        emails: [] // Will be populated by backend
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+                
+                const data = await response.json();
+                
+                // Hide typing indicator
+                hideTyping();
+                
+                // Add assistant response
+                addMessage(data.response, 'assistant', data.relevant_emails);
+                
+                // Update email preview
+                updateEmailPreview(data.relevant_emails);
+                
+            } catch (error) {
+                console.error('Chat error:', error);
+                hideTyping();
+                addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+            }
+        }
+
+        // Add message to chat
+        function addMessage(content, type, relevantEmails = null) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            avatarDiv.innerHTML = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            let messageHTML = `<p>${content}</p>`;
+            
+            if (type === 'assistant' && relevantEmails && relevantEmails.length > 0) {
+                messageHTML += `
+                    <div class="relevant-emails">
+                        <h4>📧 Found ${relevantEmails.length} relevant email${relevantEmails.length > 1 ? 's' : ''}:</h4>
+                        ${relevantEmails.map(email => `
+                            <div class="chat-email-item" onclick="showEmailDetails('${email.id}')">
+                                <div class="chat-email-subject">${escapeHtml(email.subject)}</div>
+                                <div class="chat-email-meta">${escapeHtml(email.sender)} • ${email.date}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            contentDiv.innerHTML = messageHTML;
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTyping() {
+            document.getElementById('typingIndicator').style.display = 'flex';
+            document.getElementById('sendButton').disabled = true;
+        }
+
+        // Hide typing indicator
+        function hideTyping() {
+            document.getElementById('typingIndicator').style.display = 'none';
+            document.getElementById('sendButton').disabled = false;
+        }
+
+        // Update email preview
+        function updateEmailPreview(emails) {
+            const previewContainer = document.getElementById('emailPreview');
+            
+            if (!emails || emails.length === 0) {
+                previewContainer.innerHTML = `
+                    <div class="empty-preview">
+                        <i class="fas fa-envelope-open"></i>
+                        <p>No emails found for your query</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            previewContainer.innerHTML = emails.map(email => `
+                <div class="email-preview-item" style="border-bottom: 1px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 16px;">
+                    <h4 style="font-size: 16px; font-weight: 600; color: #1f2937; margin-bottom: 8px;">
+                        ${escapeHtml(email.subject)}
+                    </h4>
+                    <div style="display: flex; justify-content: between; margin-bottom: 8px; font-size: 14px; color: #6b7280;">
+                        <span><strong>From:</strong> ${escapeHtml(email.sender)}</span>
+                        <span style="margin-left: auto;">${email.date}</span>
+                    </div>
+                    <p style="color: #374151; line-height: 1.5; font-size: 14px;">
+                        ${escapeHtml(email.snippet || email.body || '').substring(0, 200)}${(email.snippet || email.body || '').length > 200 ? '...' : ''}
+                    </p>
+                    <div style="display: flex; gap: 8px; margin-top: 12px;">
+                        <button onclick="openEmailInGmail('${email.id}')" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; flex: 1;">
+                            <i class="fas fa-envelope-open"></i> Open in Gmail
+                        </button>
+                        <button onclick="generateReplyForEmail('${email.id}', '${escapeHtml(email.subject)}', '${escapeHtml(email.sender)}', '${escapeHtml(email.snippet || email.body || '')}')" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; flex: 1;">
+                            <i class="fas fa-reply"></i> Generate Reply
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Show email details
+        function showEmailDetails(emailId) {
+            console.log('Show email details:', emailId);
+            // This could open a modal or update the preview
+        }
+
+        // Open email in Gmail
+        function openEmailInGmail(emailId) {
+            // Gmail web interface URL format
+            const gmailUrl = `https://mail.google.com/mail/u/0/#inbox/${emailId}`;
+            window.open(gmailUrl, '_blank');
+        }
+        
+        // Open email in inbox
+        function openEmailInInbox(emailId) {
+            window.open(`/inbox?email=${emailId}`, '_blank');
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Generate reply for email
+        async function generateReplyForEmail(emailId, subject, sender, body) {
+            // Show loading
+            showGenerateReplyLoading();
+            
+            try {
+                const response = await fetch('/api/generate-reply', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email_id: emailId,
+                        tone: 'professional',
+                        subject: subject,
+                        sender: sender,
+                        body: body
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to generate reply');
+                }
+
+                const data = await response.json();
+                hideGenerateReplyLoading();
+                showGeneratedReplyModal(data.reply, { id: emailId, subject, sender, body });
+
+            } catch (error) {
+                console.error('Error generating reply:', error);
+                hideGenerateReplyLoading();
+                alert(`Failed to generate reply: ${error.message}`);
+            }
+        }
+
+        // Show loading for reply generation
+        function showGenerateReplyLoading() {
+            const loadingHTML = `
+                <div id="replyLoading" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 40px; border-radius: 12px; text-align: center;">
+                        <div style="width: 60px; height: 60px; margin: 0 auto 20px; background: linear-gradient(135deg, #8b5cf6, #ec4899); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-magic" style="color: white; font-size: 24px;"></i>
+                        </div>
+                        <h3 style="margin: 0 0 10px 0; color: #1e293b;">Generating Reply...</h3>
+                        <p style="color: #64748b;">AI is crafting your response</p>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', loadingHTML);
+        }
+
+        function hideGenerateReplyLoading() {
+            const loading = document.getElementById('replyLoading');
+            if (loading) loading.remove();
+        }
+
+        // Show generated reply modal
+        function showGeneratedReplyModal(replyText, emailData) {
+            const modalHTML = `
+                <div id="replyModal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <div style="background: white; border-radius: 12px; width: 100%; max-width: 700px; max-height: 90vh; display: flex; flex-direction: column;">
+                        <div style="padding: 24px; border-bottom: 1px solid #e5e7eb; display: flex; justify-content: space-between; align-items: center;">
+                            <h2 style="margin: 0; color: #1e293b;">Generated Reply</h2>
+                            <button onclick="closeReplyModal()" style="background: none; border: none; font-size: 24px; color: #6b7280; cursor: pointer;">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div style="flex: 1; padding: 24px; overflow-y: auto;">
+                            <div style="margin-bottom: 20px;">
+                                <label style="display: block; margin-bottom: 8px; color: #374151; font-weight: 500;">Tone:</label>
+                                <select id="replyTone" onchange="regenerateReplyWithTone()" style="padding: 8px 12px; border: 2px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
+                                    <option value="professional">Professional</option>
+                                    <option value="friendly">Friendly</option>
+                                    <option value="formal">Formal</option>
+                                    <option value="casual">Casual</option>
+                                    <option value="enthusiastic">Enthusiastic</option>
+                                    <option value="apologetic">Apologetic</option>
+                                    <option value="grateful">Grateful</option>
+                                </select>
+                            </div>
+                            
+                            <textarea id="replyTextarea" style="width: 100%; min-height: 300px; padding: 16px; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 15px; line-height: 1.6; resize: vertical;">${escapeHtml(replyText)}</textarea>
+                        </div>
+                        
+                        <div style="padding: 20px; border-top: 1px solid #e5e7eb; display: flex; gap: 12px; justify-content: flex-end;">
+                            <button onclick="sendWithGmail()" style="background: #10b981; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-paper-plane"></i> Send with Gmail
+                            </button>
+                            <button onclick="copyReply()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer;">
+                                <i class="fas fa-copy"></i> Copy
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            window.currentEmailData = emailData;
+        }
+
+        function closeReplyModal() {
+            const modal = document.getElementById('replyModal');
+            if (modal) modal.remove();
+            window.currentEmailData = null;
+        }
+
+        async function regenerateReplyWithTone() {
+            const tone = document.getElementById('replyTone').value;
+            const emailData = window.currentEmailData;
+            if (!emailData) return;
+            
+            const textarea = document.getElementById('replyTextarea');
+            textarea.value = 'Regenerating...';
+            textarea.disabled = true;
+            
+            try {
+                const response = await fetch('/api/generate-reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        email_id: emailData.id,
+                        tone: tone,
+                        subject: emailData.subject,
+                        sender: emailData.sender,
+                        body: emailData.body
+                    })
+                });
+
+                if (!response.ok) throw new Error('Failed to regenerate');
+                
+                const data = await response.json();
+                textarea.value = data.reply;
+            } catch (error) {
+                textarea.value = 'Error regenerating reply';
+            } finally {
+                textarea.disabled = false;
+            }
+        }
+
+        function sendWithGmail() {
+            const replyText = document.getElementById('replyTextarea').value;
+            const emailData = window.currentEmailData;
+            if (!replyText || !emailData) return;
+            
+            const subject = 'Re: ' + (emailData.subject || '');
+            const to = emailData.sender || '';
+            const body = encodeURIComponent(replyText);
+            
+            const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${body}`;
+            window.open(gmailUrl, '_blank');
+            closeReplyModal();
+        }
+
+        function copyReply() {
+            const textarea = document.getElementById('replyTextarea');
+            if (!textarea) return;
+            
+            textarea.select();
+            document.execCommand('copy');
+            
+            const copyBtn = event.target.closest('button');
+            if (copyBtn) {
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                }, 2000);
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Chat interface loaded');
+            document.getElementById('chatInput').focus();
+        });
+    </script>
+</body>
+</html> 

@@ -1,0 +1,439 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f3f2f1;
+    height: 100vh;
+    overflow: hidden;
+    color: #323130;
+}
+
+/* Container */
+.outlook-container {
+    display: flex;
+    height: 100vh;
+    flex-direction: column;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, #0078d4, #106ebe);
+    color: white;
+    padding: 12px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    animation: slideDown 0.3s ease-out;
+}
+
+.header h1 {
+    font-size: 20px;
+    font-weight: 400;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.user-email {
+    font-size: 14px;
+    opacity: 0.9;
+}
+
+.logout-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logout-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Main Content */
+.main-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: white;
+    border-right: 1px solid #e1dfdd;
+    padding: 20px 0;
+    animation: slideRight 0.3s ease-out;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar-item {
+    padding: 14px 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    position: relative;
+    margin: 2px 0;
+}
+
+.sidebar-item:hover {
+    background: linear-gradient(90deg, #f8f9fa, #e9ecef);
+    transform: translateX(4px);
+}
+
+.sidebar-item.active {
+    background: linear-gradient(90deg, #e3f2fd, #bbdefb);
+    border-right: 4px solid #0078d4;
+    color: #0078d4;
+    font-weight: 500;
+}
+
+.sidebar-item i {
+    width: 18px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.folder-count {
+    margin-left: auto;
+    background: #0078d4;
+    color: white;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: bold;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Email List */
+.email-list {
+    flex: 1;
+    background: white;
+    border-right: 1px solid #e1dfdd;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.email-list-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid #e1dfdd;
+    background: linear-gradient(180deg, #fafafa, #f5f5f5);
+    flex-shrink: 0;
+}
+
+.email-list-header h2 {
+    font-size: 24px;
+    font-weight: 600;
+    color: #323130;
+    margin-bottom: 8px;
+}
+
+.email-count {
+    color: #605e5c;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.search-box {
+    margin: 16px 20px;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 16px 12px 44px;
+    border: 2px solid #e1dfdd;
+    border-radius: 8px;
+    font-size: 14px;
+    background: white;
+    transition: all 0.3s ease;
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: #0078d4;
+    box-shadow: 0 0 0 3px rgba(0, 120, 212, 0.1);
+}
+
+.search-icon {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #605e5c;
+    font-size: 16px;
+}
+
+.toolbar {
+    display: flex;
+    gap: 8px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e1dfdd;
+    background: #fafafa;
+    flex-shrink: 0;
+}
+
+.toolbar-btn {
+    background: white;
+    border: 1px solid #e1dfdd;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: #605e5c;
+}
+
+.toolbar-btn:hover {
+    background: #f3f2f1;
+    border-color: #c8c6c4;
+    transform: translateY(-1px);
+}
+
+.email-items-container {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+}
+
+.email-item {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    animation: slideUp 0.3s ease-out;
+    animation-fill-mode: both;
+}
+
+.email-item:nth-child(odd) {
+    animation-delay: 0.05s;
+}
+
+.email-item:nth-child(even) {
+    animation-delay: 0.1s;
+}
+
+.email-item:hover {
+    background: linear-gradient(90deg, #f8f9fa, #e9ecef);
+    transform: translateX(4px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.email-item.selected {
+    background: linear-gradient(90deg, #e3f2fd, #bbdefb);
+    border-left: 4px solid #0078d4;
+    transform: translateX(0);
+    box-shadow: 0 4px 12px rgba(0, 120, 212, 0.15);
+}
+
+.email-item.unread {
+    background: #fff;
+    font-weight: 500;
+    border-left: 4px solid #ff6b35;
+}
+
+.email-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.email-sender {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #323130;
+}
+
+.sender-name {
+    flex: 1;
+}
+
+.unread-indicator {
+    width: 8px;
+    height: 8px;
+    background: #ff6b35;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+.email-date {
+    font-size: 12px;
+    color: #8a8886;
+    font-weight: 500;
+}
+
+.email-subject {
+    font-size: 12px;
+    color: #323130;
+    margin-bottom: 5px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-weight: 500;
+}
+
+.email-snippet {
+    font-size: 11px;
+    color: #605e5c;
+    margin-bottom: 6px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.4;
+}
+
+.email-attachments {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.email-attachments i {
+    color: #8a8886;
+    font-size: 12px;
+}
+
+/* Email Viewer */
+.email-viewer {
+    flex: 2;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.no-email-selected {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.empty-state {
+    text-align: center;
+    color: #605e5c;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.empty-state i {
+    font-size: 64px;
+    margin-bottom: 24px;
+    opacity: 0.6;
+    color: #8a8886;
+}
+
+.empty-state h3 {
+    font-size: 24px;
+    margin-bottom: 12px;
+    font-weight: 400;
+    color: #323130;
+}
+
+.empty-state p {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.error-state {
+    text-align: center;
+    color: #d13438;
+}
+
+.error-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.email-content-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    animation: slideLeft 0.4s ease-out;
+}
+
+.email-header-detailed {
+    background: linear-gradient(180deg, #fafafa, #f5f5f5);
+    border-bottom: 1px solid #e1dfdd;
+    padding: 24px 32px;
+    flex-shrink: 0;
+}
+
+.email-actions {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.action-btn {
+    background: white;
+    border: 1px solid #e1dfdd;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.action-btn.primary {
+    background: #0078d4;
+    color: white;
+    border-color: #0078d4;
+}
+
+.action-btn.primary:hover {
+    background: #106ebe;
+}
+
+.action-btn.danger {
+    color: #d13438;
+    border-color: #d13438;
+}
+
+.action-btn.danger:hover {
+    background: #d13438;
+    color: white;
+}

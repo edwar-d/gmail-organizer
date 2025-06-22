@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Stream</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            padding-top: 70px;
+            width: 90%;
+        }
+
+        .logo {
+            font-size: 48px;
+            color: #0078d4;
+            margin: 0 auto 20px auto;
+            position: relative;
+            width: 100px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        h1 {
+            color: #323130;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .subtitle {
+            color: #605e5c;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .login-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            background: #4285f4;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .login-btn:hover {
+            background: #3367d6;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66,133,244,0.3);
+        }
+
+        .google-icon {
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4285f4;
+        }
+
+        .features {
+            margin-top: 40px;
+            text-align: left;
+        }
+
+        .features h3 {
+            color: #323130;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #605e5c;
+            font-size: 14px;
+        }
+
+        .feature-item i {
+            color: #0078d4;
+            width: 16px;
+        }
+    
+        .glow {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            filter: blur(30px) saturate(2);
+            opacity: 0.7;
+            z-index: 1;
+        }
+        
+        .image {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border-radius: 20px;
+            z-index: 2;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+                <img class="glow" src="../static/imgs/hdsrt9qtu7vqu8mwzyr8.png" alt="Stream Glow">
+                <img class="image" src="../static/imgs/hdsrt9qtu7vqu8mwzyr8.png" alt="Stream Sensation Icon">
+        </div>
+        
+        <h1>Stream</h1>
+        <p class="subtitle">Organize less, flow more. AI that anticipates, so you don't have to organize</p>
+        
+        <a href="/auth/login" class="login-btn">
+            <div class="google-icon">
+                <i class="fab fa-google"></i>
+            </div>
+            Sign in with Google
+        </a>
+
+        <div class="features">
+            <h3>Features</h3>
+            <div class="feature-item">
+                <i class="fas fa-check"></i>
+                <span>Clean, familiar user interface</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-check"></i>
+                <span>Search That Reads Your Mind</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-check"></i>
+                <span>Smart Categories, Zero Effort</span>
+            </div>
+            <div class="feature-item">
+                <i class="fas fa-check"></i>
+                <span>Responsive design for all devices</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

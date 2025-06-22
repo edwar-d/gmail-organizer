@@ -1,0 +1,21 @@
+{
+  "user_email": "test@example.com",
+  "categories": {
+    "Work": [
+      {
+        "id": "1",
+        "subject": "Test email"
+      }
+    ],
+    "Personal": [
+      {
+        "id": "2",
+        "subject": "Another test"
+      }
+    ]
+  },
+  "query": "test query",
+  "saved_at": "2025-06-21 08:17 PM",
+  "saved_at_iso": "2025-06-21T20:17:49.400521",
+  "email_count": 2
+}

@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stream - {{ user_email }}</title>
+    <!-- Allow images from all sources for Gmail compatibility -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; img-src * data: https:; style-src 'self' 'unsafe-inline' https:; script-src 'self' 'unsafe-inline' https:;">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/inbox.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/email-viewer.css') }}">
+    <style>
+        /* Integration styles for enhanced EmailViewer */
+        .main-content {
+            display: flex;
+            height: calc(100vh - 60px);
+        }
+        
+        /* Hide the old email viewer when EmailViewer is active */
+        .email-viewer.hidden {
+            display: none;
+        }
+        
+        /* Ensure email viewer container takes proper space */
+        .email-viewer-container {
+            flex: 2;
+            min-width: 0;
+        }
+        
+        /* Update email list to work with new viewer */
+        .email-list {
+            flex: 1;
+            min-width: 300px;
+            max-width: 400px;
+        }
+        
+        /* Categorize button styling */
+        .categorize-btn {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            text-decoration: none;
+            margin-right: 12px;
+        }
+        
+        .categorize-btn:hover {
+            background: linear-gradient(135deg, #7c3aed, #8b5cf6);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .categorize-btn i {
+            animation: sparkle 2s infinite;
+        }
+        
+        @keyframes sparkle {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.1) rotate(180deg); }
+        }
+        
+        /* Magic wand button enhancement */
+        .magic-wand-btn {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            background-size: 300% 300%;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            animation: gradientShift 3s ease infinite, float 3s ease-in-out infinite;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .magic-wand-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1, #96ceb4, #feca57);
+            background-size: 300% 300%;
+            animation: gradientShift 3s ease infinite;
+            border-radius: 50%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .magic-wand-btn:hover::before {
+            opacity: 0.3;
+        }
+
+        .magic-wand-btn:hover {
+            transform: translateY(-3px) scale(1.1);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .magic-wand-btn:active {
+            transform: translateY(-1px) scale(1.05);
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .magic-wand-btn i {
+            position: relative;
+            z-index: 2;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Sparkle effect */
+        .magic-wand-btn::after {
+            content: '✨';
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            font-size: 16px;
+            animation: sparkle 2s ease-in-out infinite;
+        }
+        
+        /* Chat with Mail Styles */
+        .chat-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            height: 500px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            display: none;
+            flex-direction: column;
+            z-index: 1002;
+            transition: all 0.3s ease;
+        }
+
+        .chat-container.chat-open {
+            display: flex;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px 12px 0 0;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+        }
+
+        .chat-minimize {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: background 0.2s ease;
+        }
+
+        .chat-minimize:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 12px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .chat-message.assistant .message-avatar {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+        }
+
+        .chat-message.user .message-avatar {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .chat-message.assistant .message-content {
+            background: #f3f4f6;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-message.user .message-content {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .message-content li {
+            margin: 4px 0;
+        }
+
+        .relevant-emails {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .chat-email-item {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chat-email-item:hover {
+            background: #f9fafb;
+            border-color: #3b82f6;
+            transform: translateX(2px);
+        }
+
+        .chat-email-subject {
+            font-weight: 600;
+            color: #1f2937;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .chat-email-meta {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .chat-input-container {
+            padding: 16px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .chat-input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .chat-send {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: none;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chat-send:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+        }
+
+        .chat-toggle-btn {
+            position: fixed;
+            bottom: 100px;
+            right: 20px;
+            width: 66px;
+            height: 66px;
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            color: white;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            transition: all 0.3s ease;
+            z-index: 1001;
+            animation: pulse 2s infinite;
+        }
+
+        .chat-toggle-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 8px 0;
+        }
+
+        .typing-indicator span {
+            width: 8px;
+            height: 8px;
+            background: #6b7280;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.7;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 8px 25px rgba(59, 130, 246, 0.7);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 6px 20px rgba(59, 130, 246, 0.5);
+            }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .chat-container {
+                width: calc(100% - 20px);
+                height: calc(100% - 100px);
+                right: 10px;
+                bottom: 10px;
+                left: 10px;
+            }
+            
+            .chat-toggle-btn {
+                bottom: 80px;
+                right: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="outlook-container">
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-envelope"></i> Stream</h1>
+            <div class="user-info">
+                <span class="user-email">{{ user_email }}</span>
+                <a href="/categorize" class="categorize-btn">
+                    <i class="fas fa-magic"></i>
+                    Categorize
+                </a>
+                <a href="/chat" class="categorize-btn" style="background: linear-gradient(135deg, #8b5cf6, #3b82f6); margin-left: 8px;">
+                    <i class="fas fa-comments"></i>
+                    Chat
+                </a>
+                <a href="/logout" class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <div class="sidebar-item active" data-folder="inbox">
+                    <i class="fas fa-inbox"></i>
+                    <span>Inbox</span>
+                    <div class="folder-count">{{ total_emails }}</div>
+                </div>
+                <div class="sidebar-item" data-folder="sent">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Sent</span>
+                </div>
+                <div class="sidebar-item" data-folder="drafts">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Drafts</span>
+                </div>
+                <div class="sidebar-item" data-folder="spam">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Spam</span>
+                </div>
+                <div class="sidebar-item" data-folder="trash">
+                    <i class="fas fa-trash"></i>
+                    <span>Trash</span>
+                </div>
+            </div>
+
+            <!-- Email List -->
+            <div class="email-list">
+                <div class="email-list-header">
+                    <h2>Inbox</h2>
+                    <div class="email-count">{{ total_emails }} emails</div>
+                </div>
+
+                <div class="search-box">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" class="search-input" placeholder="Search emails..." id="searchInput">
+                </div>
+
+                <div class="toolbar">
+                    <button class="toolbar-btn" title="Refresh" onclick="location.reload()">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Mark as read" onclick="markSelectedAsRead()">
+                        <i class="fas fa-envelope-open"></i>
+                    </button>
+                    <button class="toolbar-btn" title="Delete" onclick="deleteSelectedEmail()">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+
+                <div id="emailList" class="email-items-container">
+                    {% for email in emails %}
+                    <div class="email-item {% if email.is_unread %}unread{% endif %}" 
+                         data-email-id="{{ email.id }}"
+                         data-sender="{{ email.sender }}"
+                         data-subject="{{ email.subject }}"
+                         data-date="{{ email.date }}"
+                         data-snippet="{{ email.snippet }}"
+                         data-body="{{ email.body | tojson}}">
+                        <div class="email-item-header">
+                            <div class="email-sender">
+                                {% if email.is_unread %}
+                                <span class="unread-indicator"></span>
+                                {% endif %}
+                                <span class="sender-name">{{ email.sender }}</span>
+                            </div>
+                            <div class="email-date">{{ email.date }}</div>
+                        </div>
+                        <div class="email-subject">{{ email.subject }}</div>
+                        <div class="email-snippet">{{ email.snippet }}</div>
+                        <div class="email-attachments">
+                            {% if email.has_attachments %}
+                            <i class="fas fa-paperclip" title="Has attachments"></i>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Enhanced Email Viewer (will be created by JavaScript) -->
+            <!-- The EmailViewer will be inserted here automatically -->
+            
+            <!-- Old Email Viewer (hidden, kept for fallback) -->
+            <div class="email-viewer" style="display: none;">
+                <div class="no-email-selected" id="noEmailSelected">
+                    <div class="empty-state">
+                        <i class="fas fa-envelope-open"></i>
+                        <h3>Select an email to read</h3>
+                        <p>Choose an email from the list to view its contents</p>
+                    </div>
+                </div>
+
+                <div id="emailContent" class="email-content-container" style="display: none;">
+                    <div class="email-header-detailed">
+                        <div class="email-actions">
+                            <button class="action-btn primary" title="Reply" onclick="replyToEmail()">
+                                <i class="fas fa-reply"></i> Reply
+                            </button>
+                            <button class="action-btn" title="Reply All" onclick="replyAllToEmail()">
+                                <i class="fas fa-reply-all"></i> Reply All
+                            </button>
+                            <button class="action-btn" title="Forward" onclick="forwardEmail()">
+                                <i class="fas fa-share"></i> Forward
+                            </button>
+                            <button class="action-btn danger" title="Delete" onclick="deleteCurrentEmail()">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="subject-line">
+                            <h1 id="emailSubjectLarge"></h1>
+                        </div>
+                        
+                        <div class="email-meta-detailed">
+                            <div class="sender-info">
+                                <div class="avatar" id="senderAvatar">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="sender-details">
+                                    <div class="sender-name-large" id="emailFromLarge"></div>
+                                    <div class="sender-email" id="emailFromEmail"></div>
+                                </div>
+                            </div>
+                            <div class="email-timestamp">
+                                <div class="date-large" id="emailDateLarge"></div>
+                                <div class="time-large" id="emailTimeLarge"></div>
+                            </div>
+                        </div>
+                        
+                        <div class="recipients-info" id="recipientsInfo">
+                            <div class="recipient-row">
+                                <span class="recipient-label">To:</span>
+                                <span class="recipient-list" id="emailToLarge"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="email-body-container">
+                        <div class="email-body-content" id="emailBodyContent"></div>
+                        <div class="email-attachments-section" id="emailAttachments" style="display: none;">
+                            <h4><i class="fas fa-paperclip"></i> Attachments</h4>
+                            <div class="attachments-list" id="attachmentsList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="loading-container" id="emailLoading" style="display: none;">
+                    <div class="loading-spinner">
+                        <div class="spinner"></div>
+                        <span>Loading email...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Email Popup Modal -->
+    <div id="emailPopup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 1000; overflow-y: auto;">
+        <div style="display: flex; justify-content: center; align-items: flex-start; min-height: 100%; padding: 20px;">
+            <div style="background: white; border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); width: 100%; max-width: 900px; max-height: 90vh; overflow: hidden; margin: auto;">
+                <!-- Popup Header -->
+                <div style="display: flex; justify-content: between; align-items: center; padding: 20px; border-bottom: 1px solid #e1e5e9; background: #f8f9fa;">
+                    <div style="flex: 1;">
+                        <h2 id="popupEmailSubject" style="margin: 0; font-size: 20px; color: #323130; font-weight: 600;"></h2>
+                    </div>
+                    <button onclick="closeEmailPopup()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 5px; border-radius: 50%; width: 35px; height: 35px; display: flex; align-items: center; justify-content: center;">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Popup Content -->
+                <div style="overflow-y: auto; max-height: calc(90vh - 200px);">
+                    <!-- Email Meta Information -->
+                    <div style="padding: 20px; border-bottom: 1px solid #e1e5e9;">
+                        <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                            <div id="popupSenderAvatar" style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; margin-right: 12px; font-size: 14px;"></div>
+                            <div style="flex: 1;">
+                                <div id="popupSenderName" style="font-weight: 600; color: #323130; margin-bottom: 2px;"></div>
+                                <div id="popupSenderEmail" style="color: #605e5c; font-size: 14px;"></div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div id="popupEmailDate" style="color: #605e5c; font-size: 14px;"></div>
+                                <div id="popupEmailTime" style="color: #605e5c; font-size: 12px;"></div>
+                            </div>
+                        </div>
+                        <div id="popupRecipients" style="margin-bottom: 10px;">
+                            <span style="color: #605e5c; font-size: 14px;">To: </span>
+                            <span id="popupToList" style="color: #323130; font-size: 14px;"></span>
+                        </div>
+                    </div>
+
+                    <!-- Email Body -->
+                    <div style="padding: 20px;">
+                        <div id="popupEmailBody" style="line-height: 1.6; color: #323130; word-wrap: break-word;"></div>
+                        
+                        <!-- Attachments -->
+                        <div id="popupAttachments" style="display: none; margin-top: 20px; padding-top: 20px; border-top: 1px solid #e1e5e9;">
+                            <h4 style="margin: 0 0 15px 0; color: #323130; font-size: 16px;">
+                                <i class="fas fa-paperclip" style="margin-right: 8px;"></i>
+                                Attachments
+                            </h4>
+                            <div id="popupAttachmentsList"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Popup Actions -->
+                <div style="padding: 20px; border-top: 1px solid #e1e5e9; background: #f8f9fa; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="replyToEmailFromPopup()" style="background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-reply"></i> Reply
+                    </button>
+                    <button onclick="replyAllToEmailFromPopup()" style="background: #106ebe; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-reply-all"></i> Reply All
+                    </button>
+                    <button onclick="forwardEmailFromPopup()" style="background: #0078d4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-share"></i> Forward
+                    </button>
+                    <button onclick="generateReplyFromPopup()" style="background: linear-gradient(135deg, #8b5cf6, #ec4899); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-magic"></i> Generate Reply
+                    </button>
+                    <button onclick="deleteEmailFromPopup()" style="background: #d13438; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="magic-wand-container" style="position: fixed; bottom: 30px; left: 30px; z-index: 1000;">
+        <button id="magicWandBtn" class="magic-wand-btn" onclick="window.location.href='/categorize'" title="Categorize Emails with AI Magic">
+            <i class="fas fa-magic"></i>
+        </button>
+    </div>
+
+
+
+
+
+    <script src="{{ url_for('static', filename='js/inbox.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/email-viewer.js') }}"></script>
+    
+    <script>
+        // Global variables
+        let selectedEmailElement = null;
+        let selectedEmailId = null;
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Enhanced inbox loaded with EmailViewer support');
+            
+            // Test chat button functionality
+            const chatBtn = document.getElementById('chatToggleBtn');
+            if (chatBtn) {
+                console.log('Chat button found:', chatBtn);
+                chatBtn.addEventListener('click', function(e) {
+                    console.log('Chat button clicked via event listener!');
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            } else {
+                console.error('Chat button not found!');
+            }
+            
+            // Add double-click handler for email popup
+            document.querySelectorAll('.email-item').forEach(item => {
+                item.addEventListener('dblclick', function(e) {
+                    e.stopPropagation();
+                    showEmailPopup(this);
+                });
+            });
+            
+            // Add search functionality
+            const searchInput = document.querySelector('.search-input');
+            if (searchInput) {
+                searchInput.addEventListener('input', function() {
+                    const searchTerm = this.value.toLowerCase();
+                    const emailItems = document.querySelectorAll('.email-item');
+                    
+                    emailItems.forEach(item => {
+                        const subject = item.querySelector('.email-subject').textContent.toLowerCase();
+                        const sender = item.querySelector('.sender-name').textContent.toLowerCase();
+                        const snippet = item.querySelector('.email-snippet').textContent.toLowerCase();
+                        
+                        const matches = subject.includes(searchTerm) || 
+                                      sender.includes(searchTerm) || 
+                                      snippet.includes(searchTerm);
+                        
+                        item.style.display = matches ? 'block' : 'none';
+                    });
+                });
+            }
+        });
+        
+        // Enhanced keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            const emailItems = Array.from(document.querySelectorAll('.email-item:not([style*="display: none"])'));
+            const currentIndex = emailItems.findIndex(item => item.classList.contains('selected'));
+            
+            switch(e.key) {
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (currentIndex < emailItems.length - 1) {
+                        selectEmail(emailItems[currentIndex + 1]);
+                    }
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (currentIndex > 0) {
+                        selectEmail(emailItems[currentIndex - 1]);
+                    }
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    if (currentIndex >= 0) {
+                        showEmailPopup(emailItems[currentIndex]);
+                    }
+                    break;
+                case 'Delete':
+                    e.preventDefault();
+                    if (currentIndex >= 0) {
+                        deleteSelectedEmail();
+                    }
+                    break;
+            }
+        });
+        
+        // Chat with Mail functionality
+        function toggleChat() {
+            console.log('toggleChat called');
+            const chatContainer = document.getElementById('chatContainer');
+            const chatToggleBtn = document.getElementById('chatToggleBtn');
+            
+            console.log('chatContainer:', chatContainer);
+            console.log('chatToggleBtn:', chatToggleBtn);
+            
+            if (!chatContainer) {
+                console.error('Chat container not found!');
+                return;
+            }
+            
+            chatContainer.classList.toggle('chat-open');
+            console.log('Chat container classes:', chatContainer.className);
+            
+            if (chatContainer.classList.contains('chat-open')) {
+                chatToggleBtn.style.display = 'none';
+                const chatInput = document.getElementById('chatInput');
+                if (chatInput) {
+                    chatInput.focus();
+                } else {
+                    console.error('Chat input not found!');
+                }
+            } else {
+                chatToggleBtn.style.display = 'flex';
+            }
+        }
+
+        function handleChatKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendChatMessage();
+            }
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addChatMessage(message, 'user');
+            input.value = '';
+            
+            // Show typing indicator
+            showTypingIndicator();
+            
+            try {
+                // Get current emails for context
+                const emailItems = document.querySelectorAll('.email-item');
+                const emails = Array.from(emailItems).map(item => ({
+                    id: item.dataset.emailId,
+                    sender: item.dataset.sender,
+                    subject: item.dataset.subject,
+                    date: item.dataset.date,
+                    snippet: item.dataset.snippet
+                }));
+                
+                const response = await fetch('/api/chat-with-mail', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: message,
+                        emails: emails
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to get response');
+                }
+                
+                const data = await response.json();
+                
+                // Remove typing indicator
+                removeTypingIndicator();
+                
+                // Add assistant response
+                addChatMessage(data.response, 'assistant', data.relevant_emails);
+                
+            } catch (error) {
+                console.error('Chat error:', error);
+                removeTypingIndicator();
+                addChatMessage('Sorry, I encountered an error. Please try again.', 'assistant');
+            }
+        }
+
+        function addChatMessage(content, type, relevantEmails = null) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            
+            const avatarDiv = document.createElement('div');
+            avatarDiv.className = 'message-avatar';
+            avatarDiv.innerHTML = type === 'user' ? '<i class="fas fa-user"></i>' : '<i class="fas fa-robot"></i>';
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            
+            if (type === 'assistant' && relevantEmails && relevantEmails.length > 0) {
+                contentDiv.innerHTML = `
+                    <p>${content}</p>
+                    <div class="relevant-emails">
+                        <strong>Relevant emails:</strong>
+                        ${relevantEmails.map(email => `
+                            <div class="chat-email-item" onclick="selectEmailById('${email.id}')">
+                                <div class="chat-email-subject">${email.subject}</div>
+                                <div class="chat-email-meta">${email.sender} • ${email.date}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                contentDiv.innerHTML = `<p>${content}</p>`;
+            }
+            
+            messageDiv.appendChild(avatarDiv);
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.appendChild(messageDiv);
+            
+            // Scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messagesContainer = document.getElementById('chatMessages');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'chat-message assistant typing-message';
+            typingDiv.innerHTML = `
+                <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                <div class="message-content">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const typingMessage = document.querySelector('.typing-message');
+            if (typingMessage) {
+                typingMessage.remove();
+            }
+        }
+
+        function selectEmailById(emailId) {
+            const emailItem = document.querySelector(`[data-email-id="${emailId}"]`);
+            if (emailItem) {
+                // Scroll to email
+                emailItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // Select it
+                selectEmail(emailItem);
+                
+                // Optionally open the email popup
+                setTimeout(() => {
+                    showEmailPopup(emailItem);
+                }, 500);
+            }
+        }
+    </script>
+</body>
+</html>
