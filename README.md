@@ -1,4 +1,3 @@
-# Stream - AI-Powered Email Organization Platform
 
 A modern email management system that uses AI to automatically categorize your emails with a beautiful Next.js frontend and Flask backend.
 
